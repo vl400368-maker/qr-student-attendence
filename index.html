@@ -1,0 +1,173 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QR Student Attendance System</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #eef4ff;
+      margin: 0;
+      padding: 24px 12px;
+      color: #203047;
+    }
+    .container {
+      max-width: 650px;
+      margin: 20px auto;
+      padding: 25px;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 18px #0001;
+      text-align: center;
+    }
+    h1 { color: #174a8b; }
+    input, button {
+      box-sizing: border-box;
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      border-radius: 7px;
+      font-size: 16px;
+    }
+    input { border: 1px solid #b9c6d8; }
+    button {
+      border: 0;
+      background: #1769aa;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover { background: #104e82; }
+    #qrcode {
+      display: flex;
+      justify-content: center;
+      margin: 20px auto;
+      min-height: 0;
+    }
+    #qrcode img, #qrcode canvas {
+      max-width: 100%;
+    }
+    .notice {
+      background: #fff6dc;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .success { color: #087443; }
+    .hidden { display: none; }
+    li { text-align: left; margin: 10px 0; overflow-wrap: anywhere; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>QR Student Attendance System</h1>
+    <p>Digitizing Attendance Using QR Code Technology</p>
+    <hr>
+
+    <section id="teacherView">
+      <h2>Teacher Dashboard</h2>
+      <p>Start a class attendance session and display its QR code.</p>
+
+      <label for="className">Class / Subject</label>
+      <input id="className" placeholder="e.g. Computer Science">
+
+      <button id="startButton" onclick="startSession()">
+        Generate Attendance QR
+      </button>
+
+      <h3 id="sessionTitle"></h3>
+      <div id="qrcode"></div>
+      <p id="sessionMessage" role="status"></p>
+
+      <p class="notice">
+        This first version creates a QR code for the attendance page.
+        Students need the app to be hosted on a web address accessible
+        from their phones before this QR can open it.
+      </p>
+
+      <h3>Attendance Records (this browser only)</h3>
+      <ul id="records"></ul>
+    </section>
+
+    <section id="studentView" class="hidden">
+      <h2>Student Attendance</h2>
+      <p id="studentSession"></p>
+
+      <form id="attendanceForm">
+        <input id="studentName" placeholder="Full student name" required>
+        <input id="studentId" placeholder="Student ID" required>
+        <button type="submit">Submit Attendance</button>
+      </form>
+
+      <p id="studentMessage" role="status"></p>
+    </section>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const sessionFromQR = params.get("session");
+
+    if (sessionFromQR) {
+      document.getElementById("teacherView").classList.add("hidden");
+      document.getElementById("studentView").classList.remove("hidden");
+      document.getElementById("studentSession").textContent =
+        "Session code: " + sessionFromQR;
+    }
+
+    function startSession() {
+      const className = document.getElementById("className").value.trim();
+      const message = document.getElementById("sessionMessage");
+      const qr = document.getElementById("qrcode");
+
+      if (!className) {
+        message.textContent = "Please enter the class or subject first.";
+        return;
+      }
+
+      if (typeof QRCode === "undefined") {
+        message.textContent =
+          "QR library did not load. Connect to the internet and reload this page.";
+        return;
+      }
+
+      const session = "ATT-" + Date.now().toString(36).toUpperCase();
+      const pageURL = window.location.href.split("?")[0];
+      const attendanceURL = pageURL + "?session=" +
+        encodeURIComponent(session);
+
+      document.getElementById("sessionTitle").textContent =
+        className + " — Attendance QR";
+
+      qr.replaceChildren();
+      new QRCode(qr, {
+        text: attendanceURL,
+        width: 220,
+        height: 220,
+        correctLevel: QRCode.CorrectLevel.M
+      });
+
+      if (window.location.protocol === "file:") {
+        message.textContent =
+          "QR created for testing, but it uses a local file address. " +
+          "Host the app on an accessible web address before students scan it.";
+      } else {
+        message.textContent =
+          "QR generated. Students can scan it when this page is hosted " +
+          "at an address accessible to their phones.";
+      }
+    }
+
+    document.getElementById("attendanceForm").addEventListener(
+      "submit", function(event) {
+        event.preventDefault();
+        document.getElementById("studentMessage").textContent =
+          "Student details entered for session " + sessionFromQR +
+          ". Shared attendance recording requires a connected server and database.";
+      }
+    );
+  </script>
+</body>
+</html>
